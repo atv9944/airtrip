@@ -15,6 +15,13 @@
     "react": "19.2.4",
     "react-dom": "19.2.4"
   },
+    "dependencies": {
+    "@google/generative-ai": "latest",
+    "@pbe/react-yandex-maps": "^1.2.5",
+    "next": "14.2.3",
+    "react": "^18",
+    "react-dom": "^18"
+  },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
