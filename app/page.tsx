@@ -17,7 +17,6 @@ export default function Home() {
   const [destination, setDestination] = useState('');
   const [days, setDays] = useState(3);
   
-  // Новые фильтры
   const [transport, setTransport] = useState<'walk' | 'car' | 'transit'>('walk');
   const [duration, setDuration] = useState<number>(4);
 
@@ -27,6 +26,9 @@ export default function Home() {
   const mapRef = useRef<any>(null);
   const [leftWidth, setLeftWidth] = useState(45);
   const [isDragging, setIsDragging] = useState(false);
+
+  // НОВОЕ СОСТОЯНИЕ: Показывать ли карту на мобилках
+  const [showMapOnMobile, setShowMapOnMobile] = useState(false);
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -56,17 +58,26 @@ export default function Home() {
   }, [isDragging]);
 
   const handlePlaceClick = (place: any) => {
-    if (mapRef.current) {
-      mapRef.current.setCenter([place.lat, place.lng], 16, { checkZoomRange: true, duration: 400 });
-      mapRef.current.balloon.open(
-        [place.lat, place.lng],
-        `<div style="padding: 10px; max-width: 280px; font-family: sans-serif;">
-          <h4 style="margin: 0 0 8px 0; font-size: 16px; color: #1a202c;">${place.name}</h4>
-          <p style="margin: 0; font-size: 13px; color: #4a5568; line-height: 1.5;">${place.desc}</p>
-        </div>`,
-        { closeButton: true }
-      );
+    // На мобильных - при клике на место автоматически открываем карту
+    if (window.innerWidth < 1024) {
+      setShowMapOnMobile(true);
     }
+    
+    // Небольшая задержка, чтобы карта успела отобразиться на мобильных
+    setTimeout(() => {
+      if (mapRef.current) {
+        mapRef.current.container.fitToViewport();
+        mapRef.current.setCenter([place.lat, place.lng], 16, { checkZoomRange: true, duration: 400 });
+        mapRef.current.balloon.open(
+          [place.lat, place.lng],
+          `<div style="padding: 10px; max-width: 280px; font-family: sans-serif;">
+            <h4 style="margin: 0 0 8px 0; font-size: 16px; color: #1a202c;">${place.name}</h4>
+            <p style="margin: 0; font-size: 13px; color: #4a5568; line-height: 1.5;">${place.desc}</p>
+          </div>`,
+          { closeButton: true }
+        );
+      }
+    }, 150);
   };
 
   const getWBLink = (city: string) => {
@@ -83,12 +94,12 @@ export default function Home() {
       const res = await fetch('/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        // Отправляем новые параметры на сервер
         body: JSON.stringify({ destination, days, transport, duration }),
       });
       const data = await res.json();
       if (data.error) throw new Error(data.error);
       setItinerary(data);
+      setShowMapOnMobile(false); // Сбрасываем карту при новом поиске
     } catch (err: any) {
       console.error(err);
       alert(err.message || "Ошибка генерации");
@@ -106,10 +117,8 @@ export default function Home() {
           ИИ создаст детальный маршрут с локациями на карте и подберет лучшие экскурсии за пару секунд.
         </p>
         
-        {/* Обновленная форма поиска */}
+        {/* Форма поиска */}
         <div className="bg-white p-6 md:p-8 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] w-full max-w-4xl border border-gray-100 flex flex-col gap-6">
-          
-          {/* Верхний ряд: Куда и Дни */}
           <div className="flex flex-col md:flex-row gap-5">
             <div className="flex-1 flex flex-col gap-2">
               <label className="text-sm font-semibold text-gray-700 ml-1">Куда едем?</label>
@@ -129,10 +138,7 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Нижний ряд: Фильтры и кнопка */}
           <div className="flex flex-col lg:flex-row gap-5 items-end">
-            
-            {/* Транспорт */}
             <div className="flex flex-col gap-2 w-full lg:w-auto">
               <label className="text-sm font-semibold text-gray-700 ml-1">Транспорт</label>
               <div className="flex bg-gray-50 p-1.5 rounded-2xl border border-gray-100">
@@ -157,7 +163,6 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Длительность */}
             <div className="flex flex-col gap-2 w-full lg:w-auto">
               <label className="text-sm font-semibold text-gray-700 ml-1">Длительность в день</label>
               <div className="flex bg-gray-50 p-1.5 rounded-2xl border border-gray-100">
@@ -177,14 +182,12 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Кнопка */}
             <button 
               onClick={generateTrip} disabled={loading}
               className="w-full lg:flex-1 bg-blue-600 text-white h-[52px] rounded-2xl font-semibold hover:bg-blue-700 transition-all disabled:bg-blue-300 shadow-md flex items-center justify-center"
             >
               {loading ? 'Думаем...' : 'Спланировать'}
             </button>
-            
           </div>
         </div>
       </main>
@@ -192,12 +195,12 @@ export default function Home() {
   }
 
   return (
-    <div className="flex flex-col lg:flex-row h-screen font-sans text-gray-800 bg-white">
+    <div className="flex flex-col lg:flex-row h-screen font-sans text-gray-800 bg-white relative">
       
       {/* ЛЕВАЯ ПАНЕЛЬ */}
       <div 
         style={{ width: typeof window !== 'undefined' && window.innerWidth >= 1024 ? `${leftWidth}%` : '100%' }} 
-        className="h-full p-6 lg:p-10 overflow-y-auto bg-[#FAFAFA] shrink-0"
+        className="h-full p-6 lg:p-10 overflow-y-auto bg-[#FAFAFA] shrink-0 pb-24 lg:pb-10"
       >
         <button onClick={() => setItinerary(null)} className="text-gray-500 text-sm font-medium mb-6 hover:text-gray-800 transition-colors flex items-center gap-2">
           <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
@@ -232,14 +235,12 @@ export default function Home() {
         </div>
 
         {/* ТАЙМЛАЙН */}
-        <div className="space-y-8 pb-12">
+        <div className="space-y-8">
           {itinerary.days.map((day: any, dIdx: number) => {
             const color = DAY_COLORS[dIdx % DAY_COLORS.length];
             
             return (
               <div key={dIdx} className="bg-white p-5 md:p-6 rounded-3xl border border-gray-100 shadow-[0_2px_15px_rgb(0,0,0,0.02)]">
-                
-                {/* Шапка Дня */}
                 <div className="flex items-center gap-3 mb-5 pb-3 border-b border-gray-50">
                   <span className={`${color.badgeBg} ${color.badgeText} font-bold px-3 py-1.5 rounded-lg text-xs`}>
                     День {day.day}
@@ -247,13 +248,9 @@ export default function Home() {
                   <h3 className="text-xl font-bold text-gray-800">{day.title}</h3>
                 </div>
                 
-                {/* Ветка таймлайна */}
                 <div className="relative pl-6 ml-2 border-l-2 border-gray-100 space-y-5">
                   {day.places.map((place: any, pIdx: number) => (
-                    
-                    /* Карточка Места (Компактная) */
                     <div key={pIdx} className="relative group cursor-pointer" onClick={() => handlePlaceClick(place)}>
-                      {/* Кружок на линии */}
                       <div 
                         className="absolute -left-[37px] top-2 w-7 h-7 rounded-full bg-white border-[3px] shadow-sm flex items-center justify-center text-[11px] font-bold z-10 transition-transform group-hover:scale-110"
                         style={{ borderColor: color.hex, color: color.hex }}
@@ -267,7 +264,6 @@ export default function Home() {
                         </h4>
                         <p className="text-gray-600 text-[13px] leading-snug mb-3">{place.desc}</p>
                         
-                        {/* Тег локации */}
                         <div className="flex">
                           <span className="text-[11px] font-medium text-gray-600 bg-white border border-gray-200 px-2.5 py-1 rounded-lg shadow-sm flex items-center gap-1">
                             <span className="text-red-500 text-[10px]">📍</span> Локация
@@ -275,10 +271,8 @@ export default function Home() {
                         </div>
                       </div>
                     </div>
-
                   ))}
                 </div>
-
               </div>
             );
           })}
@@ -292,7 +286,7 @@ export default function Home() {
       />
 
       {/* ПРАВАЯ ПАНЕЛЬ: Яндекс Карты */}
-      <div className="flex-1 h-[50vh] lg:h-screen sticky top-0 bg-gray-100 overflow-hidden relative">
+      <div className={`bg-gray-100 overflow-hidden ${showMapOnMobile ? 'fixed inset-0 z-40 block' : 'hidden lg:block'} lg:relative lg:inset-auto lg:z-auto lg:flex-1 lg:h-screen`}>
         <YMaps query={{ apikey: process.env.NEXT_PUBLIC_YANDEX_KEY }}>
           <Map 
             instanceRef={(ref) => { if (ref) mapRef.current = ref; }}
@@ -308,7 +302,6 @@ export default function Home() {
 
               return (
                 <React.Fragment key={`day-layer-${dIdx}`}>
-                  {/* Линия маршрута для дня */}
                   <Polyline
                     geometry={coordinates}
                     options={{
@@ -319,7 +312,6 @@ export default function Home() {
                     }}
                   />
 
-                  {/* Метки мест с цифрами внутри */}
                   {day.places.map((place: any, idx: number) => (
                     <Placemark 
                       key={`place-${day.day}-${idx}`} 
@@ -341,7 +333,20 @@ export default function Home() {
           </Map>
         </YMaps>
       </div>
-      
+
+      {/* ПЛАВАЮЩАЯ КНОПКА (ТОЛЬКО ДЛЯ МОБИЛОК) */}
+      <button
+        onClick={() => {
+          setShowMapOnMobile(!showMapOnMobile);
+          setTimeout(() => {
+            if (mapRef.current) mapRef.current.container.fitToViewport();
+          }, 100);
+        }}
+        className="lg:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-gray-900 text-white px-6 py-3.5 rounded-full text-[15px] font-bold shadow-[0_8px_30px_rgb(0,0,0,0.2)] flex items-center gap-2 transition-transform active:scale-95 whitespace-nowrap"
+      >
+        {showMapOnMobile ? '📝 К списку мест' : '🗺 Показать на карте'}
+      </button>
+
     </div>
   );
 }
