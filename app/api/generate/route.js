@@ -1,9 +1,11 @@
 import { NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY as string);
+// Убрали "as string"
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-export async function POST(req: Request) {
+// Убрали ": Request"
+export async function POST(req) {
   try {
     const { destination, days, transport, duration } = await req.json();
 
@@ -56,7 +58,9 @@ export async function POST(req: Request) {
     const data = JSON.parse(text);
 
     return NextResponse.json(data);
-  } catch (error: any) {
+    
+  // Убрали ": any"
+  } catch (error) {
     console.error('Ошибка Gemini:', error);
     return NextResponse.json({ error: error.message || 'Внутренняя ошибка сервера' }, { status: 500 });
   }
