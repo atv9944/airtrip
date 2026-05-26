@@ -16,6 +16,11 @@ const DAY_COLORS = [
 export default function Home() {
   const [destination, setDestination] = useState('');
   const [days, setDays] = useState(3);
+  
+  // Новые фильтры
+  const [transport, setTransport] = useState<'walk' | 'car' | 'transit'>('walk');
+  const [duration, setDuration] = useState<number>(4);
+
   const [loading, setLoading] = useState(false);
   const [itinerary, setItinerary] = useState<any>(null);
 
@@ -78,7 +83,8 @@ export default function Home() {
       const res = await fetch('/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ destination, days }),
+        // Отправляем новые параметры на сервер
+        body: JSON.stringify({ destination, days, transport, duration }),
       });
       const data = await res.json();
       if (data.error) throw new Error(data.error);
@@ -93,29 +99,93 @@ export default function Home() {
   if (!itinerary) {
     return (
       <main className="min-h-screen bg-[#F9FAFB] flex flex-col items-center justify-center p-4 font-sans text-gray-800">
-        <h1 className="text-5xl md:text-6xl font-extrabold mb-6 text-center tracking-tight">
+        <h1 className="text-5xl md:text-6xl font-extrabold mb-4 text-center tracking-tight">
           Air<span className="text-blue-600">Trip</span>.
         </h1>
         <p className="text-lg text-gray-500 mb-10 text-center max-w-lg leading-relaxed">
           ИИ создаст детальный маршрут с локациями на карте и подберет лучшие экскурсии за пару секунд.
         </p>
-        <div className="bg-white p-4 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] flex flex-col md:flex-row gap-4 w-full max-w-3xl border border-gray-100">
-          <input 
-            type="text" placeholder="Куда летим? (например: Казань, Сочи)" 
-            className="flex-1 p-4 bg-gray-50 rounded-2xl outline-none focus:ring-2 focus:ring-blue-100 transition-all"
-            value={destination} onChange={(e) => setDestination(e.target.value)}
-          />
-          <input 
-            type="number" placeholder="Дни" min="1" max="14"
-            className="w-full md:w-32 p-4 bg-gray-50 rounded-2xl outline-none focus:ring-2 focus:ring-blue-100 transition-all"
-            value={days} onChange={(e) => setDays(Number(e.target.value))}
-          />
-          <button 
-            onClick={generateTrip} disabled={loading}
-            className="bg-blue-600 text-white px-8 py-4 rounded-2xl font-semibold hover:bg-blue-700 transition-all disabled:bg-blue-300 shadow-md"
-          >
-            {loading ? 'Думаем...' : 'Спланировать'}
-          </button>
+        
+        {/* Обновленная форма поиска */}
+        <div className="bg-white p-6 md:p-8 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] w-full max-w-4xl border border-gray-100 flex flex-col gap-6">
+          
+          {/* Верхний ряд: Куда и Дни */}
+          <div className="flex flex-col md:flex-row gap-5">
+            <div className="flex-1 flex flex-col gap-2">
+              <label className="text-sm font-semibold text-gray-700 ml-1">Куда едем?</label>
+              <input 
+                type="text" placeholder="Например: Казань, Сочи" 
+                className="w-full p-4 bg-gray-50 rounded-2xl outline-none focus:ring-2 focus:ring-blue-100 transition-all text-gray-800 placeholder-gray-400"
+                value={destination} onChange={(e) => setDestination(e.target.value)}
+              />
+            </div>
+            <div className="w-full md:w-40 flex flex-col gap-2">
+              <label className="text-sm font-semibold text-gray-700 ml-1">На сколько дней?</label>
+              <input 
+                type="number" placeholder="Дни" min="1" max="14"
+                className="w-full p-4 bg-gray-50 rounded-2xl outline-none focus:ring-2 focus:ring-blue-100 transition-all text-gray-800"
+                value={days} onChange={(e) => setDays(Number(e.target.value))}
+              />
+            </div>
+          </div>
+
+          {/* Нижний ряд: Фильтры и кнопка */}
+          <div className="flex flex-col lg:flex-row gap-5 items-end">
+            
+            {/* Транспорт */}
+            <div className="flex flex-col gap-2 w-full lg:w-auto">
+              <label className="text-sm font-semibold text-gray-700 ml-1">Транспорт</label>
+              <div className="flex bg-gray-50 p-1.5 rounded-2xl border border-gray-100">
+                {[
+                  { id: 'walk', icon: '🚶‍♂️', label: 'Пешком' },
+                  { id: 'car', icon: '🚗', label: 'Авто' },
+                  { id: 'transit', icon: '🚌', label: 'Транспорт' }
+                ].map((t) => (
+                  <button
+                    key={t.id}
+                    onClick={() => setTransport(t.id as any)}
+                    className={`flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                      transport === t.id 
+                        ? 'bg-white text-blue-600 shadow-sm border border-gray-200/50' 
+                        : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                    }`}
+                  >
+                    <span className="text-base">{t.icon}</span> 
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Длительность */}
+            <div className="flex flex-col gap-2 w-full lg:w-auto">
+              <label className="text-sm font-semibold text-gray-700 ml-1">Маршрут в день</label>
+              <div className="flex bg-gray-50 p-1.5 rounded-2xl border border-gray-100">
+                {[2, 3, 4, 5].map((hours) => (
+                  <button
+                    key={hours}
+                    onClick={() => setDuration(hours)}
+                    className={`flex-1 px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                      duration === hours 
+                        ? 'bg-white text-blue-600 shadow-sm border border-gray-200/50' 
+                        : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                    }`}
+                  >
+                    {hours} ч.
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Кнопка */}
+            <button 
+              onClick={generateTrip} disabled={loading}
+              className="w-full lg:flex-1 bg-blue-600 text-white h-[52px] rounded-2xl font-semibold hover:bg-blue-700 transition-all disabled:bg-blue-300 shadow-md flex items-center justify-center"
+            >
+              {loading ? 'Думаем...' : 'Спланировать'}
+            </button>
+            
+          </div>
         </div>
       </main>
     );
@@ -135,7 +205,14 @@ export default function Home() {
         </button>
 
         <h2 className="text-3xl font-extrabold mb-1 tracking-tight">{itinerary.city}</h2>
-        <p className="text-gray-500 mb-8 font-medium text-sm">Ваш персональный маршрут на {itinerary.days.length} дня</p>
+        <p className="text-gray-500 mb-8 font-medium text-sm flex gap-3 items-center flex-wrap">
+          <span>Ваш персональный маршрут на {itinerary.days.length} дня</span>
+          <span className="text-gray-300">|</span>
+          <span className="bg-gray-100 px-2 py-0.5 rounded-md">
+            {transport === 'walk' ? '🚶 Пешком' : transport === 'car' ? '🚗 На авто' : '🚌 Транспортом'}
+          </span>
+          <span className="bg-gray-100 px-2 py-0.5 rounded-md">До {duration} ч/день</span>
+        </p>
         
         {/* WB Впечатления */}
         <div className="bg-white p-5 rounded-3xl mb-8 border border-gray-100 flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 shadow-[0_4px_20px_rgb(0,0,0,0.03)] relative overflow-hidden">
