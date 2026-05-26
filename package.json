@@ -11,6 +11,7 @@
   "dependencies": {
     "@google/generative-ai": "latest",
     "@pbe/react-yandex-maps": "^1.2.5",
+    "groq-sdk": "^1.2.0",
     "next": "^16.2.6",
     "react": "^19.2.6",
     "react-dom": "^19.2.6"
