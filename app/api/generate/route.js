@@ -52,7 +52,7 @@ export async function POST(req) {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'llama3-70b-8192', // Используем мощную модель от LLaMA 3
+        model: 'llama-3.1-8b-instant', // Используем мощную модель от LLaMA 3
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.5 // Немного убавляем креативность для стабильного JSON
       })
