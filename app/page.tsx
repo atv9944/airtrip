@@ -145,4 +145,145 @@ export default function Home() {
         <div className="bg-white p-6 rounded-3xl mb-10 border border-gray-100 flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 shadow-[0_4px_20px_rgb(0,0,0,0.03)] relative overflow-hidden">
           <div className="absolute top-0 right-0 w-32 h-32 bg-purple-100 rounded-full blur-3xl -mr-10 -mt-10 opacity-60"></div>
           <div className="relative z-10">
-            <h
+            <h3 className="text-xl font-bold text-gray-900 mb-1 flex items-center gap-2">
+              <span className="text-2xl">🎟</span> Экскурсии и эмоции
+            </h3>
+            <p className="text-gray-500 text-sm">Найдите активности от местных жителей на WB Впечатления.</p>
+          </div>
+          <a 
+            href={getWBLink(itinerary.city)} target="_blank" rel="noopener noreferrer"
+            className="relative z-10 bg-gray-900 text-white px-6 py-3 rounded-xl text-sm font-semibold hover:bg-purple-600 transition-colors shrink-0 whitespace-nowrap shadow-md"
+          >
+            Смотреть в {itinerary.city}
+          </a>
+        </div>
+
+        {/* ТАЙМЛАЙН */}
+        <div className="space-y-12 pb-12">
+          {itinerary.days.map((day: any, dIdx: number) => {
+            const color = DAY_COLORS[dIdx % DAY_COLORS.length];
+            
+            return (
+              <div key={dIdx} className="bg-white p-6 md:p-8 rounded-3xl border border-gray-100 shadow-[0_2px_15px_rgb(0,0,0,0.02)]">
+                
+                {/* Шапка Дня */}
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-8 pb-4 border-b border-gray-50">
+                  <span className={`${color.badgeBg} ${color.badgeText} font-bold px-4 py-2 rounded-xl text-sm w-fit`}>
+                    День {day.day}
+                  </span>
+                  <h3 className="text-2xl font-bold text-gray-800">{day.title}</h3>
+                </div>
+                
+                {/* Ветка таймлайна */}
+                <div className="relative pl-6 ml-2 border-l-2 border-gray-100 space-y-0">
+                  {day.places.map((place: any, pIdx: number) => (
+                    <React.Fragment key={pIdx}>
+                      
+                      {/* Карточка Места */}
+                      <div className="relative group cursor-pointer" onClick={() => handlePlaceClick(place)}>
+                        {/* Кружок на линии с цифрой */}
+                        <div 
+                          className="absolute -left-[37px] top-1 w-7 h-7 rounded-full bg-white border-[3px] shadow-sm flex items-center justify-center text-[11px] font-bold z-10 transition-transform group-hover:scale-110"
+                          style={{ borderColor: color.hex, color: color.hex }}
+                        >
+                          {pIdx + 1}
+                        </div>
+
+                        <div className="bg-gray-50/50 hover:bg-gray-50 p-5 rounded-2xl border border-transparent hover:border-gray-200 transition-all">
+                          <h4 className="text-lg font-bold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">
+                            {place.name}
+                          </h4>
+                          <p className="text-gray-600 text-sm leading-relaxed">{place.desc}</p>
+                          
+                          {/* Тег категории (визуальный) */}
+                          <div className="mt-4 flex gap-2">
+                            <span className="text-[11px] font-medium text-gray-500 bg-white border border-gray-200 px-2.5 py-1 rounded-md shadow-sm">
+                              📍 Локация
+                            </span>
+                            <span className="text-[11px] font-medium text-blue-500 bg-blue-50 px-2.5 py-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity">
+                              Смотреть на карте ➔
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Линия пути до следующей точки (если это не последняя точка) */}
+                      {pIdx < day.places.length - 1 && (
+                        <div className="h-10 border-l-2 border-dashed border-gray-200 ml-[1px] my-1 flex items-center">
+                          <span className="ml-6 text-xs font-medium text-gray-400 bg-white px-2 py-0.5 rounded-full border border-gray-100 shadow-sm flex items-center gap-1">
+                            <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"></path></svg>
+                            Далее
+                          </span>
+                        </div>
+                      )}
+                    </React.Fragment>
+                  ))}
+                </div>
+
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* РАЗДЕЛИТЕЛЬ */}
+      <div 
+        onMouseDown={() => setIsDragging(true)}
+        className="hidden lg:flex w-1.5 bg-gray-200 hover:bg-blue-500 active:bg-blue-600 cursor-col-resize transition-colors z-10 shrink-0"
+      />
+
+      {/* ПРАВАЯ ПАНЕЛЬ: Яндекс Карты */}
+      <div className="flex-1 h-[50vh] lg:h-screen sticky top-0 bg-gray-100 overflow-hidden relative">
+        <YMaps query={{ apikey: process.env.NEXT_PUBLIC_YANDEX_KEY }}>
+          <Map 
+            instanceRef={(ref) => { if (ref) mapRef.current = ref; }}
+            defaultState={{ 
+              center: [itinerary.days[0].places[0].lat, itinerary.days[0].places[0].lng], 
+              zoom: 12 
+            }} 
+            width="100%" height="100%"
+          >
+            {itinerary.days.map((day: any, dIdx: number) => {
+              const color = DAY_COLORS[dIdx % DAY_COLORS.length];
+              const coordinates = day.places.map((p: any) => [p.lat, p.lng]);
+
+              return (
+                <React.Fragment key={`day-layer-${dIdx}`}>
+                  {/* Линия маршрута для дня */}
+                  <Polyline
+                    geometry={coordinates}
+                    options={{
+                      strokeColor: color.hex,
+                      strokeWidth: 4,
+                      strokeOpacity: 0.7,
+                      strokeStyle: 'shortdash', // Делаем линию пунктирной для красоты
+                    }}
+                  />
+
+                  {/* Метки мест с цифрами внутри */}
+                  {day.places.map((place: any, idx: number) => (
+                    <Placemark 
+                      key={`place-${day.day}-${idx}`} 
+                      geometry={[place.lat, place.lng]} 
+                      properties={{ 
+                        iconContent: `${idx + 1}`, // Цифра внутри кружочка
+                        hintContent: place.name,
+                        balloonContentHeader: `<strong style="font-size: 16px; font-family: sans-serif;">${idx + 1}. ${place.name}</strong>`,
+                        balloonContentBody: `<p style="font-size: 13px; color: #444; max-width: 250px; font-family: sans-serif;">${place.desc}</p>`
+                      }} 
+                      options={{ 
+                        // Специальный пресет Яндекса для кругов с цифрами
+                        preset: `islands#${color.colorName}CircleIcon`,
+                      }}
+                    />
+                  ))}
+                </React.Fragment>
+              );
+            })}
+          </Map>
+        </YMaps>
+      </div>
+      
+    </div>
+  );
+}
