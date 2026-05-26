@@ -205,7 +205,7 @@ export default function Home() {
                             {place.name}
                           </h4>
                           <span className="text-xs text-blue-500 font-medium bg-blue-50 px-2 py-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                            Открыть балун ➔
+                            Открыть ➔
                           </span>
                         </div>
                         <p className="text-gray-600 leading-relaxed text-sm">{place.desc}</p>
