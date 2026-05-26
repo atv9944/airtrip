@@ -159,7 +159,7 @@ export default function Home() {
 
             {/* Длительность */}
             <div className="flex flex-col gap-2 w-full lg:w-auto">
-              <label className="text-sm font-semibold text-gray-700 ml-1">Маршрут в день</label>
+              <label className="text-sm font-semibold text-gray-700 ml-1">Длительность в день</label>
               <div className="flex bg-gray-50 p-1.5 rounded-2xl border border-gray-100">
                 {[2, 3, 4, 5].map((hours) => (
                   <button
