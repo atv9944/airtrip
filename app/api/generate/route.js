@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import Groq from 'groq-sdk';
 
-
 export async function POST(req) {
   // Проверяем, есть ли вообще ключ
   if (!process.env.GROQ_API_KEY) {
